@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime Recommendations</title>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+
+      --genre-bg: #dcfce7;
+      --genre-text: #166534;
+
+      --format-bg: #ede9fe;
+      --format-text: #5b21b6;
+
+      --theme-bg: #ffe4e6;
+      --theme-text: #9f1239;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(251, 113, 133, 0.08), transparent 35%),
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.1), transparent 35%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      width: min(1500px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 60px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: -0.045em;
+      line-height: 1;
+    }
+
+    .title-block p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 720px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .updated {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.78);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      min-width: 110px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .stat span {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(248, 250, 252, 0.86);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 14px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search {
+      flex: 1 1 300px;
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px 15px 13px 42px;
+      font-size: 15px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    .search input:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 4px rgba(147, 197, 253, 0.28);
+    }
+
+    .search::before {
+      content: "⌕";
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-52%);
+      color: var(--muted);
+      font-size: 22px;
+    }
+
+    .button {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background: #f9fafb;
+    }
+
+    .active-filters,
+    .top-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .top-tags {
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .filter-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      align-self: center;
+      margin-right: 2px;
+    }
+
+    .tag,
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.2;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .tag:hover,
+    .filter-chip:hover {
+      filter: brightness(0.97);
+      transform: translateY(-1px);
+    }
+
+    .genre {
+      background: var(--genre-bg);
+      color: var(--genre-text);
+    }
+
+    .format {
+      background: var(--format-bg);
+      color: var(--format-text);
+    }
+
+    .theme {
+      background: var(--theme-bg);
+      color: var(--theme-text);
+    }
+
+    .filter-chip {
+      background: #fff;
+      color: #374151;
+      border-color: var(--border);
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .filter-chip.active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    .tier {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 0;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .tier-rail {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 34px;
+      font-weight: 950;
+      letter-spacing: -0.08em;
+      padding: 20px 0;
+    }
+
+    .tier-content {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .tier-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tier-header h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.025em;
+    }
+
+    .tier-header span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 13px;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      border-color: #cbd5e1;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    .tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-content: flex-start;
+    }
+
+    .notes {
+      margin-top: auto;
+      padding-top: 9px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .notes-label {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .notes p {
+      margin: 0;
+      color: #4b5563;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .state {
+      text-align: center;
+      background: #fff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 22px;
+      padding: 50px 20px;
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+
+    .state h2 {
+      color: var(--text);
+      margin-top: 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .footer-note {
+      margin: 24px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        width: min(100% - 20px, 1500px);
+        padding-top: 18px;
+      }
+
+      header {
+        flex-direction: column;
+      }
+
+      .stats {
+        justify-content: flex-start;
+      }
+
+      .tier {
+        grid-template-columns: 1fr;
+      }
+
+      .tier-rail {
+        min-height: 58px;
+        padding: 10px;
+      }
+
+      .tier-content {
+        padding: 14px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        position: static;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <div class="title-block">
+        <h1>Anime Recommendations</h1>
+        <p>
+          A personal anime recommendation tier list powered by Airtable and Cloudflare Workers.
+          Search by title, notes, genre, format, or theme. Click tags to filter.
+        </p>
+        <div class="updated" id="updatedAt">Loading latest Airtable data...</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <strong id="totalCount">0</strong>
+          <span>Total</span>
+        </div>
+        <div class="stat">
+          <strong id="visibleCount">0</strong>
+          <span>Showing</span>
+        </div>
+        <div class="stat">
+          <strong id="tagCount">0</strong>
+          <span>Tags</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <div class="toolbar-row">
+        <div class="search">
+          <input id="searchInput" type="search" placeholder="Search anime, notes, genres, themes..." />
+        </div>
+        <button class="button" id="clearButton">Clear filters</button>
+      </div>
+
+      <div class="active-filters" id="activeFilters"></div>
+      <div class="top-tags" id="topTags"></div>
+    </section>
+
+    <section id="loadingState" class="state">
+      <h2>Loading recommendations...</h2>
+      <p>Fetching live data from Airtable through Cloudflare.</p>
+    </section>
+
+    <section id="tiers"></section>
+
+    <section class="state hidden" id="emptyState">
+      <h2>No matches found</h2>
+      <p>Try clearing filters or searching for something else.</p>
+    </section>
+
+    <section class="state hidden" id="errorState">
+      <h2>Could not load recommendations</h2>
+      <p id="errorMessage"></p>
+    </section>
+
+    <p class="footer-note">
+      Airtable token is stored privately in Cloudflare. No API key is exposed in this page.
+    </p>
+  </main>
+
+  <script>
+    const API_URL = "https://steep-rice-3d60.ashviper.workers.dev/recommendations";
+
+    const tierMeta = {
+      S: {
+        order: 1,
+        label: "Favorites",
+        description: "Top recommendations / personal favorites",
+        color: "#fb7185"
+      },
+      A: {
+        order: 2,
+        label: "Highly Recommended",
+        description: "Very good and easy to recommend",
+        color: "#fdba74"
+      },
+      B: {
+        order: 3,
+        label: "Good But Conditional",
+        description: "Worth watching if it matches your taste",
+        color: "#60a5fa"
+      },
+      C: {
+        order: 4,
+        label: "Mixed",
+        description: "More conditional picks",
+        color: "#34d399"
+      },
+      D: {
+        order: 5,
+        label: "Low Priority",
+        description: "Probably not first choices",
+        color: "#a78bfa"
+      },
+      F: {
+        order: 6,
+        label: "Not For Me",
+        description: "Popular, notable, or interesting, but lower priority personally",
+        color: "#9ca3af"
+      }
+    };
+
+    let anime = [];
+    let allTagCounts = [];
+    const selectedTags = new Set();
+
+    const searchInput = document.getElementById("searchInput");
+    const clearButton = document.getElementById("clearButton");
+    const tiersEl = document.getElementById("tiers");
+    const totalCountEl = document.getElementById("totalCount");
+    const visibleCountEl = document.getElementById("visibleCount");
+    const tagCountEl = document.getElementById("tagCount");
+    const topTagsEl = document.getElementById("topTags");
+    const activeFiltersEl = document.getElementById("activeFilters");
+    const emptyStateEl = document.getElementById("emptyState");
+    const loadingStateEl = document.getElementById("loadingState");
+    const errorStateEl = document.getElementById("errorState");
+    const errorMessageEl = document.getElementById("errorMessage");
+    const updatedAtEl = document.getElementById("updatedAt");
+
+    function cleanString(value, fallback = "") {
+      if (value === null || value === undefined) return fallback;
+
+      if (Array.isArray(value)) {
+        return value
+          .map(v => String(v || "").trim())
+          .filter(Boolean)
+          .join(", ") || fallback;
+      }
+
+      return String(value).trim() || fallback;
+    }
+
+    function normalizeTag(tag) {
+      return cleanString(tag).toLowerCase();
+    }
+
+    function normalizeArray(value) {
+      if (!value) return [];
+
+      if (Array.isArray(value)) {
+        return value
+          .map(v => cleanString(v))
+          .filter(Boolean);
+      }
+
+      return String(value)
+        .split(",")
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+
+    function makeFallbackId(item, index) {
+      return `${cleanString(item.title, "untitled").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`;
+    }
+
+    async function loadAnime() {
+      const res = await fetch(API_URL);
+
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+
+      if (!data.recommendations || !Array.isArray(data.recommendations)) {
+        throw new Error("API response did not contain a recommendations array.");
+      }
+
+      if (data.updatedAt) {
+        const date = new Date(data.updatedAt);
+        updatedAtEl.textContent = `Last synced from Airtable: ${date.toLocaleString()}`;
+      } else {
+        updatedAtEl.textContent = "Loaded live data from Airtable.";
+      }
+
+      return data.recommendations
+        .map((item, index) => {
+          const title = cleanString(item.title, "Untitled");
+          const tier = cleanString(item.tier, "B");
+          const genres = normalizeArray(item.genres);
+          const formats = normalizeArray(item.formats);
+          const themes = normalizeArray(item.themes);
+          const notes = cleanString(item.notes);
+          const allTags = [...genres, ...formats, ...themes];
+
+          return {
+            id: cleanString(item.id) || makeFallbackId({ title }, index),
+            title,
+            tier,
+            genres,
+            formats,
+            themes,
+            notes,
+            sortOrder: Number(item.sortOrder) || tierMeta[tier]?.order || 99,
+            allTags,
+            searchable: [
+              title,
+              tier,
+              genres.join(" "),
+              formats.join(" "),
+              themes.join(" "),
+              notes
+            ].join(" ").toLowerCase()
+          };
+        })
+        .filter(item => item.title && item.title !== "Untitled")
+        .sort((a, b) => {
+          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+          return String(a.title).localeCompare(String(b.title));
+        });
+    }
+
+    function getAllTagCounts() {
+      const counts = new Map();
+
+      anime.forEach(item => {
+        item.allTags.forEach(tag => {
+          const key = normalizeTag(tag);
+          if (!key) return;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        });
+      });
+
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+    }
+
+    function tagClass(type) {
+      if (type === "genre") return "genre";
+      if (type === "format") return "format";
+      return "theme";
+    }
+
+    function makeTag(tag, type = "filter", displayText = null) {
+      const normalized = normalizeTag(tag);
+
+      const el = document.createElement("span");
+      el.className = type === "filter"
+        ? `filter-chip ${selectedTags.has(normalized) ? "active" : ""}`
+        : `tag ${tagClass(type)}`;
+
+      el.textContent = displayText || tag;
+
+      el.addEventListener("click", () => {
+        toggleTag(normalized);
+      });
+
+      return el;
+    }
+
+    function toggleTag(tag) {
+      const normalized = normalizeTag(tag);
+      if (!normalized) return;
+
+      if (selectedTags.has(normalized)) {
+        selectedTags.delete(normalized);
+      } else {
+        selectedTags.add(normalized);
+      }
+
+      render();
+    }
+
+    function matchesFilters(item) {
+      const query = searchInput.value.trim().toLowerCase();
+      const itemTags = item.allTags.map(normalizeTag);
+
+      const matchesSearch = !query || item.searchable.includes(query);
+
+      const matchesTags =
+        selectedTags.size === 0 ||
+        [...selectedTags].every(tag => itemTags.includes(tag));
+
+      return matchesSearch && matchesTags;
+    }
+
+    function renderTopTags() {
+      topTagsEl.innerHTML = "";
+
+      const label = document.createElement("span");
+      label.className = "filter-label";
+      label.textContent = "Popular tags";
+      topTagsEl.appendChild(label);
+
+      allTagCounts.slice(0, 28).forEach(([tag, count]) => {
+        topTagsEl.appendChild(makeTag(tag, "filter", `${tag} ${count}`));
+      });
+    }
+
+    function renderActiveFilters() {
+      activeFiltersEl.innerHTML = "";
+
+      if (selectedTags.size === 0 && !searchInput.value.trim()) {
+        const hint = document.createElement("span");
+        hint.className = "filter-label";
+        hint.textContent = "No active filters";
+        activeFiltersEl.appendChild(hint);
+        return;
+      }
+
+      const label = document.createElement("span");
+      label.className = "filter-label";
+      label.textContent = "Active";
+      activeFiltersEl.appendChild(label);
+
+      if (searchInput.value.trim()) {
+        const searchChip = document.createElement("span");
+        searchChip.className = "filter-chip active";
+        searchChip.textContent = `search: ${searchInput.value.trim()} ×`;
+        searchChip.addEventListener("click", () => {
+          searchInput.value = "";
+          render();
+        });
+        activeFiltersEl.appendChild(searchChip);
+      }
+
+      [...selectedTags].sort((a, b) => String(a).localeCompare(String(b))).forEach(tag => {
+        const chip = document.createElement("span");
+        chip.className = "filter-chip active";
+        chip.textContent = `${tag} ×`;
+        chip.addEventListener("click", () => toggleTag(tag));
+        activeFiltersEl.appendChild(chip);
+      });
+    }
+
+    function createCard(item) {
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const title = document.createElement("h3");
+      title.textContent = item.title;
+      card.appendChild(title);
+
+      const tagGroup = document.createElement("div");
+      tagGroup.className = "tag-group";
+
+      item.genres.forEach(tag => tagGroup.appendChild(makeTag(tag, "genre")));
+      item.formats.forEach(tag => tagGroup.appendChild(makeTag(tag, "format")));
+      item.themes.forEach(tag => tagGroup.appendChild(makeTag(tag, "theme")));
+
+      card.appendChild(tagGroup);
+
+      if (item.notes) {
+        const notes = document.createElement("div");
+        notes.className = "notes";
+
+        const label = document.createElement("span");
+        label.className = "notes-label";
+        label.textContent = "Notes";
+
+        const p = document.createElement("p");
+        p.textContent = item.notes;
+
+        notes.appendChild(label);
+        notes.appendChild(p);
+        card.appendChild(notes);
+      }
+
+      return card;
+    }
+
+    function render() {
+      const filtered = anime.filter(matchesFilters);
+      const grouped = new Map();
+
+      filtered.forEach(item => {
+        const tier = cleanString(item.tier, "B");
+        if (!grouped.has(tier)) grouped.set(tier, []);
+        grouped.get(tier).push(item);
+      });
+
+      const allTiers = [...new Set([
+        ...Object.keys(tierMeta),
+        ...anime.map(item => cleanString(item.tier, "B"))
+      ])];
+
+      const sortedTiers = allTiers.sort((a, b) => {
+        const tierA = cleanString(a);
+        const tierB = cleanString(b);
+
+        const aOrder = tierMeta[tierA]?.order ?? 99;
+        const bOrder = tierMeta[tierB]?.order ?? 99;
+
+        return aOrder - bOrder || String(tierA).localeCompare(String(tierB));
+      });
+
+      tiersEl.innerHTML = "";
+
+      sortedTiers.forEach(tier => {
+        const tierName = cleanString(tier, "Other");
+        const items = grouped.get(tierName) || [];
+        if (items.length === 0) return;
+
+        const meta = tierMeta[tierName] || {
+          order: 99,
+          label: "Other",
+          description: "",
+          color: "#64748b"
+        };
+
+        const tierEl = document.createElement("section");
+        tierEl.className = "tier";
+
+        const rail = document.createElement("div");
+        rail.className = "tier-rail";
+        rail.style.background = meta.color;
+        rail.textContent = tierName;
+
+        const content = document.createElement("div");
+        content.className = "tier-content";
+
+        const header = document.createElement("div");
+        header.className = "tier-header";
+
+        const h2 = document.createElement("h2");
+        h2.textContent = `${tierName} — ${meta.label}`;
+
+        const count = document.createElement("span");
+        count.textContent = `${items.length} ${items.length === 1 ? "title" : "titles"}`;
+
+        header.appendChild(h2);
+        header.appendChild(count);
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        items.forEach(item => {
+          grid.appendChild(createCard(item));
+        });
+
+        content.appendChild(header);
+        content.appendChild(grid);
+
+        tierEl.appendChild(rail);
+        tierEl.appendChild(content);
+
+        tiersEl.appendChild(tierEl);
+      });
+
+      totalCountEl.textContent = anime.length;
+      visibleCountEl.textContent = filtered.length;
+      tagCountEl.textContent = allTagCounts.length;
+
+      emptyStateEl.classList.toggle("hidden", filtered.length !== 0);
+      renderTopTags();
+      renderActiveFilters();
+    }
+
+    searchInput.addEventListener("input", render);
+
+    clearButton.addEventListener("click", () => {
+      searchInput.value = "";
+      selectedTags.clear();
+      render();
+    });
+
+    async function init() {
+      try {
+        loadingStateEl.classList.remove("hidden");
+        errorStateEl.classList.add("hidden");
+        emptyStateEl.classList.add("hidden");
+
+        anime = await loadAnime();
+        allTagCounts = getAllTagCounts();
+
+        loadingStateEl.classList.add("hidden");
+        render();
+      } catch (error) {
+        console.error(error);
+
+        loadingStateEl.classList.add("hidden");
+        errorStateEl.classList.remove("hidden");
+        errorMessageEl.textContent = error.message;
+        updatedAtEl.textContent = "Failed to load Airtable data.";
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
